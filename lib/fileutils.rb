@@ -925,7 +925,8 @@ public
     fu_check_options options, OPT_TABLE['install']
     fu_output_message "install -c#{options[:preserve] && ' -p'}#{options[:mode] ? (' -m 0%o' % options[:mode]) : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
     return if options[:noop]
-    fu_each_src_dest(src, dest) do |s, d, st|
+    fu_each_src_dest(src, dest) do |s, d|
+      st = File.stat(s)
       unless File.exist?(d) and compare_file(s, d)
         remove_file d, true
         copy_file s, d
@@ -1295,7 +1296,12 @@ private
     end
 
     def exist?
-      lstat! ? true : false
+      begin
+        lstat
+        true
+      rescue Errno::ENOENT
+        false
+      end
     end
 
     def file?
@@ -1604,7 +1610,7 @@ private
   def fu_each_src_dest(src, dest)   #:nodoc:
     fu_each_src_dest0(src, dest) do |s, d|
       raise ArgumentError, "same file: #{s} and #{d}" if fu_same?(s, d)
-      yield s, d, File.stat(s)
+      yield s, d
     end
   end
 
